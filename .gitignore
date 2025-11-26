@@ -135,7 +135,7 @@ output/
 # *.pdf 
 # helper_functions.py
 
-# Local vectorstores (RAG indexes)
-chunks_vector_store/
-chapter_summaries_vector_store/
-book_quotes_vectorstore/
+# # Local vectorstores (RAG indexes)
+# chunks_vector_store/
+# chapter_summaries_vector_store/
+# book_quotes_vectorstore/
