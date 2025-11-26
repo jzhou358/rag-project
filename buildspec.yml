@@ -1,30 +1,37 @@
 version: 0.2
 
+env:
+  variables:
+    AWS_DEFAULT_REGION: us-east-1
+    ECR_REPO_NAME: rag-my
+    IMAGE_TAG: latest
+
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - aws --version
-      - $(aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 832194895313.dkr.ecr.us-east-1.amazonaws.com)
-
-      - IMAGE_REPO=832194895313.dkr.ecr.us-east-1.amazonaws.com/rag-my
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH}
+      
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+      - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}
+      
+      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} \
+        | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
 
   build:
     commands:
-      - echo Build Docker image...
-      - docker build -t $IMAGE_REPO:$IMAGE_TAG .
-      - docker tag $IMAGE_REPO:$IMAGE_TAG $IMAGE_REPO:latest
+      - echo Building Docker image...
+      - docker build -t ${ECR_URI}:${IMAGE_TAG} .
+      - echo Pushing Docker image...
+      - docker push ${ECR_URI}:${IMAGE_TAG}
 
   post_build:
     commands:
-      - echo Pushing image to ECR...
-      - docker push $IMAGE_REPO:$IMAGE_TAG
-      - docker push $IMAGE_REPO:latest
-
-      - printf '{"ImageURI":"%s:%s"}' $IMAGE_REPO $IMAGE_TAG > imageDetail.json
+      - echo Writing image definitions file...
+      
+      - printf '[{"name":"rag-app","imageUri":"%s"}]' "${ECR_URI}:${IMAGE_TAG}" > imagedefinitions.json
+      - echo Done writing imagedefinitions.json
 
 artifacts:
   files:
-    - imageDetail.json
+    - imagedefinitions.json
