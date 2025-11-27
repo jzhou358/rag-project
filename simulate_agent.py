@@ -120,10 +120,13 @@ def medium_rag_answer(question: str):
 # 6. Streamlit UI
 # ---------------------------
 # st.title("Medium RAG over mlq.pdf (Chunks + Summaries + Quotes)")
-st.title("Junchao Zhou - COSC 6376 Cloud Computing Fall 2025 Final Project")
+st.title("COSC 6376 Cloud Computing Fall 2025 Final Project")
+st.header("Junchao Zhou - 2401060")
 st.subheader("Deployment and Optimization of RAG-Enhanced LLM Agent via DevOps Pipeline")
 
-
+# Image above the input box
+# Make sure this path exists in your repo (for example: assets/project_banner.png)
+st.image("assets/overall_pipeline.png", use_column_width=True)
 
 # default_q = "Ask a question about the document (mlq.pdf)..."
 # user_q = st.text_input("Your question:", value=default_q)
