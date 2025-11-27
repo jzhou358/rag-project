@@ -1,13 +1,19 @@
 import os
-from dotenv import load_dotenv
+import tempfile
 
+from dotenv import load_dotenv
 import streamlit as st
 
-# These imports match the style used in functions_for_pipeline.py
+# LangChain / OpenAI imports
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
+
+# For uploaded-PDF mode
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 
 # ---------------------------
 # 1. Load environment variables
@@ -17,7 +23,8 @@ assert os.getenv("OPENAI_API_KEY"), "Please set OPENAI_API_KEY in your .env file
 
 
 # ---------------------------
-# 2. Load the three vector stores (chunks, summaries, quotes)
+# 2. Load the three prebuilt vector stores (chunks, summaries, quotes)
+#    These are the indices you built offline from mlq.pdf
 # ---------------------------
 @st.cache_resource
 def load_retrievers():
@@ -87,7 +94,7 @@ llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
 
 
 # ---------------------------
-# 5. A "medium" RAG pipeline using all three retrievers
+# 5. A "medium" RAG pipeline using all three retrievers (for mlq.pdf)
 # ---------------------------
 def medium_rag_answer(question: str):
     # 5.1 Retrieve from each store
@@ -117,31 +124,116 @@ def medium_rag_answer(question: str):
 
 
 # ---------------------------
-# 6. Streamlit UI
+# 6. Generic RAG for any retriever (for uploaded PDFs)
 # ---------------------------
-# st.title("Medium RAG over mlq.pdf (Chunks + Summaries + Quotes)")
+def rag_answer_with_retriever(retriever, question: str):
+    """
+    Generic RAG using any retriever (for uploaded PDF).
+    """
+    docs = retriever.get_relevant_documents(question)
+
+    if not docs:
+        context = ""
+    else:
+        context = "\n\n".join(d.page_content for d in docs)
+
+    prompt_text = RAG_PROMPT.format(context=context, question=question)
+    response = llm.invoke(prompt_text)
+    return response.content, context
+
+
+# ---------------------------
+# 7. Build a retriever from an uploaded PDF (in-memory only)
+# ---------------------------
+@st.cache_resource(show_spinner="Building vector index from uploaded PDF...")
+def build_pdf_retriever(file_bytes: bytes):
+    """
+    Build a FAISS retriever from an uploaded PDF file.
+    The index only lives in memory (per Streamlit session).
+    """
+    # 1. Save uploaded file to a temp path
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(file_bytes)
+        tmp_path = tmp.name
+
+    # 2. Load PDF pages
+    loader = PyPDFLoader(tmp_path)
+    docs = loader.load()
+
+    # 3. Split into chunks
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+    )
+    chunks = splitter.split_documents(docs)
+
+    # 4. Build FAISS vectorstore in memory
+    embeddings = OpenAIEmbeddings()
+    vs = FAISS.from_documents(chunks, embeddings)
+
+    # 5. Return a retriever
+    retriever = vs.as_retriever(search_kwargs={"k": 4})
+    return retriever
+
+
+# ---------------------------
+# 8. Streamlit UI
+# ---------------------------
 st.title("COSC 6376 Cloud Computing - Fall 2025 - Final Project")
 st.header("Junchao Zhou - 2401060")
 st.subheader("Deployment and Optimization of RAG-Enhanced LLM Agent via DevOps Pipeline")
 
-# Image above the input box
-# Make sure this path exists in your repo (for example: assets/project_banner.png)
+# Image above the input / mode selector
 st.image("assets/overall_pipeline.png", use_column_width=True)
 
-# default_q = "Ask a question about the document (mlq.pdf)..."
-# user_q = st.text_input("Your question:", value=default_q)
-user_q = st.text_input("Ask any question about the document:")
+# Two modes: fixed MLQ RAG, and upload-your-own PDF RAG
+mode = st.radio(
+    "Choose RAG mode:",
+    ["RAG over course document (mlq.pdf)", "RAG over uploaded PDF"],
+)
 
-if st.button("Run Medium RAG"):
-    q = user_q.strip()
-    if not q:
-        st.warning("Please enter a question.")
+# ---------- Mode 1: your existing MLQ RAG ----------
+if mode == "RAG over course document (mlq.pdf)":
+    user_q = st.text_input("Ask any question about the course document (mlq.pdf):")
+
+    if st.button("Run Medium RAG", key="mlq_button"):
+        q = user_q.strip()
+        if not q:
+            st.warning("Please enter a question.")
+        else:
+            with st.spinner("Retrieving and answering from mlq.pdf..."):
+                answer, used_context = medium_rag_answer(q)
+
+            st.subheader("Answer")
+            st.write(answer)
+
+            with st.expander("Show retrieved context"):
+                st.write(used_context)
+
+# ---------- Mode 2: upload PDF and do RAG ----------
+else:
+    uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
+
+    if uploaded_file is not None:
+        st.success(f"Uploaded: {uploaded_file.name}")
+
+        # Build / cache retriever
+        retriever = build_pdf_retriever(uploaded_file.getvalue())
+
+        user_q = st.text_input("Ask a question about the uploaded PDF:")
+
+        if st.button("Run RAG on uploaded PDF", key="upload_button"):
+            q = user_q.strip()
+            if not q:
+                st.warning("Please enter a question.")
+            else:
+                with st.spinner("Building answer from your PDF..."):
+                    answer, used_context = rag_answer_with_retriever(retriever, q)
+
+                st.subheader("Answer")
+                st.write(answer)
+
+                with st.expander("Show retrieved context"):
+                    st.write(used_context)
     else:
-        with st.spinner("Retrieving and answering..."):
-            answer, used_context = medium_rag_answer(q)
-
-        st.subheader("Answer")
-        st.write(answer)
-
-        with st.expander("Show retrieved context"):
-            st.write(used_context)
+        st.info("Please upload a PDF to start.")
