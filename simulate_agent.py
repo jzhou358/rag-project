@@ -119,10 +119,15 @@ def medium_rag_answer(question: str):
 # ---------------------------
 # 6. Streamlit UI
 # ---------------------------
-st.title("Medium RAG over mlq.pdf (Chunks + Summaries + Quotes)")
+# st.title("Medium RAG over mlq.pdf (Chunks + Summaries + Quotes)")
+st.title("COSC 6376 Cloud Computing Fall 2025 Final Project")
+st.subheader("Deployment and Optimization of RAG-Enhanced LLM Agent via DevOps Pipeline")
 
-default_q = "Ask a question about the document (mlq.pdf)..."
-user_q = st.text_input("Your question:", value=default_q)
+
+
+# default_q = "Ask a question about the document (mlq.pdf)..."
+# user_q = st.text_input("Your question:", value=default_q)
+user_q = st.text_input("Ask any question about the document:")
 
 if st.button("Run Medium RAG"):
     q = user_q.strip()
