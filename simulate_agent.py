@@ -87,6 +87,27 @@ llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
 
 
 # ---------------------------
+# 4.1 Fallback: general OpenAI answer (no document restriction)
+# ---------------------------
+def fallback_llm_answer(question: str) -> str:
+    """
+    Use the same OpenAI model to answer the question from general knowledge,
+    without using the document context.
+    """
+    prompt = f"""
+The user asked the following question:
+
+{question}
+
+The document context did not contain enough information to answer it.
+Now answer the question using your general knowledge. 
+Be concise and clear.
+"""
+    response = llm.invoke(prompt)
+    return response.content.strip()
+
+
+# ---------------------------
 # 5. A "medium" RAG pipeline using all three retrievers
 # ---------------------------
 def medium_rag_answer(question: str):
@@ -110,26 +131,35 @@ def medium_rag_answer(question: str):
     # 5.3 Fill the prompt
     prompt_text = RAG_PROMPT.format(context=context, question=question)
 
-    # 5.4 Call the LLM
+    # 5.4 Call the LLM with RAG context
     response = llm.invoke(prompt_text)
+    rag_answer = response.content.strip()
 
-    return response.content, context
+    # 5.5 If RAG couldn't answer, fall back to general knowledge
+    sentinel = "i don't know based on the document"
+    if sentinel in rag_answer.lower():
+        general_answer = fallback_llm_answer(question)
+        combined_answer = (
+            "I don't know based on the document.\n\n"
+            "But here is an answer from my general knowledge (OpenAI model):\n"
+            f"{general_answer}"
+        )
+        return combined_answer, context
+
+    # Otherwise just return the RAG answer
+    return rag_answer, context
 
 
 # ---------------------------
 # 6. Streamlit UI
 # ---------------------------
-# st.title("Medium RAG over mlq.pdf (Chunks + Summaries + Quotes)")
 st.title("COSC 6376 Cloud Computing - Fall 2025 - Final Project")
 st.header("Junchao Zhou - 2401060")
 st.subheader("Deployment and Optimization of RAG-Enhanced LLM Agent via DevOps Pipeline")
 
 # Image above the input box
-# Make sure this path exists in your repo (for example: assets/project_banner.png)
 st.image("assets/overall_pipeline.png", use_column_width=True)
 
-# default_q = "Ask a question about the document (mlq.pdf)..."
-# user_q = st.text_input("Your question:", value=default_q)
 user_q = st.text_input("Ask any question about the document:")
 
 if st.button("Run Medium RAG"):
