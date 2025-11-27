@@ -120,7 +120,7 @@ def medium_rag_answer(question: str):
 # 6. Streamlit UI
 # ---------------------------
 # st.title("Medium RAG over mlq.pdf (Chunks + Summaries + Quotes)")
-st.title("COSC 6376 Cloud Computing Fall 2025 Final Project")
+st.title("Junchao Zhou - COSC 6376 Cloud Computing Fall 2025 Final Project")
 st.subheader("Deployment and Optimization of RAG-Enhanced LLM Agent via DevOps Pipeline")
 
 
