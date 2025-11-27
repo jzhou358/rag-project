@@ -189,7 +189,7 @@ st.image("assets/overall_pipeline.png", use_column_width=True)
 # Two modes: fixed MLQ RAG, and upload-your-own PDF RAG
 mode = st.radio(
     "Choose RAG mode:",
-    ["RAG over course document (mlq.pdf)", "RAG over uploaded PDF"],
+    ["RAG over our document", "RAG over uploaded PDF"],
 )
 
 # ---------- Mode 1: your existing MLQ RAG ----------
