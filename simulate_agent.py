@@ -23,8 +23,8 @@ assert os.getenv("OPENAI_API_KEY"), "Please set OPENAI_API_KEY in your .env file
 
 
 # ---------------------------
-# 2. Load the three prebuilt vector stores (chunks, summaries, quotes)
-#    These are the indices you built offline from mlq.pdf
+# 2. Load the prebuilt vector stores (chunks, summaries, quotes)
+#    These indexes are generated offline from a reference document.
 # ---------------------------
 @st.cache_resource
 def load_retrievers():
@@ -58,7 +58,7 @@ chunks_retriever, summaries_retriever, quotes_retriever = load_retrievers()
 
 
 # ---------------------------
-# 3. Define a stronger RAG prompt
+# 3. Define a RAG prompt
 # ---------------------------
 RAG_PROMPT = PromptTemplate.from_template(
     """
@@ -94,9 +94,10 @@ llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
 
 
 # ---------------------------
-# 5. A "medium" RAG pipeline using all three retrievers (for mlq.pdf)
+# 5. RAG pipeline using the three prebuilt retrievers
 # ---------------------------
 def medium_rag_answer(question: str):
+    """RAG over the built-in reference document (precomputed vector stores)."""
     # 5.1 Retrieve from each store
     docs_chunks = chunks_retriever.get_relevant_documents(question)
     docs_summaries = summaries_retriever.get_relevant_documents(question)
@@ -127,9 +128,7 @@ def medium_rag_answer(question: str):
 # 6. Generic RAG for any retriever (for uploaded PDFs)
 # ---------------------------
 def rag_answer_with_retriever(retriever, question: str):
-    """
-    Generic RAG using any retriever (for uploaded PDF).
-    """
+    """Generic RAG using any retriever (e.g., for an uploaded PDF)."""
     docs = retriever.get_relevant_documents(question)
 
     if not docs:
@@ -143,13 +142,13 @@ def rag_answer_with_retriever(retriever, question: str):
 
 
 # ---------------------------
-# 7. Build a retriever from an uploaded PDF (in-memory only)
+# 7. Build a retriever from an uploaded PDF (session-local only)
 # ---------------------------
 @st.cache_resource(show_spinner="Building vector index from uploaded PDF...")
 def build_pdf_retriever(file_bytes: bytes):
     """
     Build a FAISS retriever from an uploaded PDF file.
-    The index only lives in memory (per Streamlit session).
+    The index is kept only for the current Streamlit session.
     """
     # 1. Save uploaded file to a temp path
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -183,25 +182,25 @@ st.title("COSC 6376 Cloud Computing - Fall 2025 - Final Project")
 st.header("Junchao Zhou - 2401060")
 st.subheader("Deployment and Optimization of RAG-Enhanced LLM Agent via DevOps Pipeline")
 
-# Image above the input / mode selector
+# Architecture image above the controls
 st.image("assets/overall_pipeline.png", use_column_width=True)
 
-# Two modes: fixed MLQ RAG, and upload-your-own PDF RAG
+# Two modes: built-in RAG vs. upload-your-own PDF RAG
 mode = st.radio(
     "Choose RAG mode:",
-    ["RAG over our document", "RAG over uploaded PDF"],
+    ["RAG over built-in document", "RAG over uploaded PDF"],
 )
 
-# ---------- Mode 1: your existing MLQ RAG ----------
-if mode == "RAG over course document (mlq.pdf)":
-    user_q = st.text_input("Ask any question about the course document (mlq.pdf):")
+# ---------- Mode 1: built-in reference document ----------
+if mode == "RAG over built-in document":
+    user_q = st.text_input("Ask any question about the built-in document:")
 
-    if st.button("Run Medium RAG", key="mlq_button"):
+    if st.button("Run Medium RAG", key="builtin_button"):
         q = user_q.strip()
         if not q:
             st.warning("Please enter a question.")
         else:
-            with st.spinner("Retrieving and answering from mlq.pdf..."):
+            with st.spinner("Retrieving and answering from the built-in document..."):
                 answer, used_context = medium_rag_answer(q)
 
             st.subheader("Answer")
@@ -210,7 +209,7 @@ if mode == "RAG over course document (mlq.pdf)":
             with st.expander("Show retrieved context"):
                 st.write(used_context)
 
-# ---------- Mode 2: upload PDF and do RAG ----------
+# ---------- Mode 2: upload PDF and run RAG ----------
 else:
     uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
