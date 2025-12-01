@@ -1,0 +1,17 @@
+question,mode,runs,avg_latency_sec
+What problem does AutoBurst aim to solve in cloud computing?,gpt_only,3,1.6548850333347218
+What problem does AutoBurst aim to solve in cloud computing?,rag,3,1.3831509333346428
+How do burstable instances differ from regular instances in terms of CPU credits and cost?,gpt_only,3,3.6130453666652707
+How do burstable instances differ from regular instances in terms of CPU credits and cost?,rag,3,2.396541600001607
+What are the two main components of AutoBurst and what does each one control?,gpt_only,3,2.9803069666668307
+What are the two main components of AutoBurst and what does each one control?,rag,3,1.0069639666665655
+How does the Latency Optimizer use a PD controller to meet a latency SLO?,gpt_only,3,4.547508600000583
+How does the Latency Optimizer use a PD controller to meet a latency SLO?,rag,3,1.7018813333343132
+How does the Resource Estimator decide how many burstable instances to provision?,gpt_only,3,1.5253220333349116
+How does the Resource Estimator decide how many burstable instances to provision?,rag,3,1.1821399333348381
+"Against which existing system is AutoBurst evaluated, and what kind of cost savings are reported?",gpt_only,3,0.8684590333311158
+"Against which existing system is AutoBurst evaluated, and what kind of cost savings are reported?",rag,3,0.935949599998518
+What kinds of real-world traces are used to evaluate AutoBurst's performance?,gpt_only,3,1.9775019666703884
+What kinds of real-world traces are used to evaluate AutoBurst's performance?,rag,3,0.8505394666669114
+How does AutoBurst handle mispredictions in the number of instances while still meeting latency SLOs?,gpt_only,3,3.8243387666637623
+How does AutoBurst handle mispredictions in the number of instances while still meeting latency SLOs?,rag,3,2.350834766664775
