@@ -236,5 +236,3 @@ else:
                     st.write(used_context)
     else:
         st.info("Please upload a PDF to start.")
-
-#
