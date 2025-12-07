@@ -1,0 +1,1 @@
+python concurrent_load_test.py --url http://rag-project-alb-977672821.us-east-1.elb.amazonaws.com/ --requests 100 --concurrency 10 --csv load_test_summary.csv

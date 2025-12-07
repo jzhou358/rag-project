@@ -1,0 +1,2 @@
+timestamp,url,total_requests,concurrency,successes,failures,avg_latency_sec,p95_latency_sec
+2025-12-07T02:01:16.208967,http://rag-project-alb-977672821.us-east-1.elb.amazonaws.com/,100,10,100,0,0.116176,0.142232
