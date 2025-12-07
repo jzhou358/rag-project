@@ -2,22 +2,22 @@ version: 0.2
 
 env:
   variables:
-    IMAGE_REPO_NAME: rag-my          # 你的 ECR 仓库名
+    IMAGE_REPO_NAME: rag-my          
     IMAGE_TAG: latest
-    CONTAINER_NAME: rag-app          # ECS 任务定义里的 container name
+    CONTAINER_NAME: rag-app          
 
 phases:
   pre_build:
     commands:
       - echo "Login to Amazon ECR..."
       - aws --version
-      # 获取账号 ID
+      
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - echo "ACCOUNT_ID = $ACCOUNT_ID"
-      # 组装 ECR 仓库 URI
+      
       - REPOSITORY_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}
       - echo "REPOSITORY_URI = $REPOSITORY_URI"
-      # 登录 ECR（注意：这里不要加反斜杠，不要加 $()）
+      
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
 
   build:
